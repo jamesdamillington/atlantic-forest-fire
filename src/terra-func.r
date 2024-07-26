@@ -1,49 +1,64 @@
 library(terra)
 
-#add OS tools to handle \ vs / in paths?
 
-mosaicCropTifs <- functionn(data_path, pat, output,cropper)
+#' mosaic a list of files
+#' @param pat (char) is a regex filename to create a list of files
+#' @param mfun (char, optional) is the mosaic function to use
+#' @param rdtype (char, optional) is the output data type for mosaicked raster 
+mosaicFlist <- function(data_path, pat,mfun=NULL,rdtype=NULL)
 {
-
   files <- list.files(path = data_path, 
-                      pattern = paste0(pat,".*\\.tif$"), 
+                      pattern = pat, 
                       full.names = TRUE)
+  print(paste0("mosaicking ", length(files), " files"))
   
-  rasters <- c(lapply(files, rast))
-  rsrc <- sprc(rasters)
-  m <- mosaic(rsrc)
-  mr<- resample(m, cropper,method='near')
-  masked <- crop(mr,cropper,mask=T)
-  writeRaster(masked, paste0(data_path,output))
+  rasters <- c(lapply(files, rast))  #apply rast function over list of filenames
+  rsrc <- sprc(rasters) #Create a SpatRasterCollection
+
+  if(is.null(mfun) & is.null(rdtype)){
+    m <- mosaic(rsrc)
+    } else if(!is.null(mfun) & !is.null(rdtype)) {
+      m <- mosaic(rsrc,fun=mfun,datatype=rdtype)
+      } else {
+        if(!is.null(mfun)) { m <- mosaic(rsrc,fun=mfun) 
+          } else { m <- mosaic(rsrc,datatype=rdtype)}
+  }
+  
+  return(m)
 }
 
-data_path <- "E:/AtlanticForest/atlantic-forest-fire/data/mapbiomas-fire/frequency_30/"
-pat <- "mapbiomas_brazil-collection_30-fire_frequency-mata_atlntica-1985_1990-"
-output <- "mapbiomas_brazil-collection_30-fire_frequency-mata_atlntica-1985_1990_croppedINT.tif"
 
-cropper <- rast("data/mapbiomas-lulc/MAPBIOMAS-LULC-MATAATLANTICA-CLP/mapbiomas-brazil-collection-80-mataatlantica-lulc-1985.clp.tif")
+#' resample, crop, mask
+#' @param cropper (SpatRaster) is the reference raster against which to resample, crop and (optionally) mask
+#' @param resfun (char, optional) is the method resample used for estimating new cell values
+#' @param cmask (bool, optional) mask option in terra::crop 
+#' @param rdtype (char, optional) datatype of returned SpatRaster (see terra::writeRaster)
+resampleCrop <- function(r, cropper, resfun=NULL, cmask=NULL, rdtype=NULL)
+{
+
+  #example: rr <- resample(r, cropper, method='near',datatype="INT1U")
+  if(is.null(resfun) & is.null(rdtype)){
+    rr <- resample(r, cropper)
+  } else if(!is.null(resfun) & !is.null(rdtype)) {
+    rr <- resample(r, cropper,method=resfun,datatype=rdtype)
+  } else {
+    if(!is.null(resfun)) { rr <- resample(r, cropper,method=resfun) 
+    } else { rr <- resample(r, cropper,datatype=rdtype)}
+  }
+  
+  #example: rrm <- crop(rr,cropper,mask=T,datatype="INT1U")
+  if(is.null(cmask) & is.null(rdtype)){
+    rrm <- crop(rr,cropper)
+  } else if(!is.null(cmask) & !is.null(rdtype)) {
+    rrm <- crop(rr,cropper,mask=cmask,datatype=rdtype)
+  } else {
+    if(!is.null(cmask)) { rrm <- crop(rr,cropper,mask=cmask) 
+    } else { rrm <- crop(rr,cropper,datatype=rdtype)}
+  }
+  
+  return(rrm)
+}
 
 
-mosaicTifs(data_path, pat, yrs, cropper)
-
-
-
-
-##MEMORY MANAGEMENT see https://rspatial.org/pkg/10-misc.html  https://rspatial.github.io/terra/reference/terraOptions.html
-terra_tempdir <- "E:/Rtemp/terra_tmp"  ## define the name of a temp directory where raster tmp files will be stored
-dir.create(terra_tempdir, showWarnings = F, recursive = T)  ## create the directory
-terraOptions(tempdir = terra_tempdir)  ## set raster options
-## remove the tmp dir
-unlink(terra_tempdir, recursive = T, force = T)
-
-
-tmpFiles(current=TRUE, orphan=T, old=T, remove=FALSE)
-
-
-#to try as output for INT1U
-mint<-mosaic(rsrc,fun='first',datatype="INT1U")
-mintr<- resample(mint, cropper,method='near',datatype="INT1U")
-maskedr <- crop(mintr,cropper,mask=T,datatype="INT1U")
-writeRaster(maskedr, paste0(data_path,output),datatype="INT1U")
 
 
