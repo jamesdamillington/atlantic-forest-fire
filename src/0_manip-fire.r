@@ -6,26 +6,26 @@ dir.create(terra_tempdir, showWarnings = F, recursive = T)  ## create the direct
 terraOptions(tempdir = terra_tempdir)  ## set raster options
 
 
-data_path <- "data/mapbiomas-fire/annual-burned-coverage_30/"
-cropper <- rast("data/mapbiomas-lulc/MAPBIOMAS-LULC-MATAATLANTICA-CLP/mapbiomas-brazil-collection-80-mataatlantica-lulc-1985.clp.tif")
+data_path <- "data/mapbiomas-rege/regen/"
+cropper <- rast("data/mapbiomas-lulc/lulc_80/mapbiomas-brazil-collection-80-mataatlantica-2011.tif")
 
-yrs <- seq(2011,2011,by=1)
+yrs <- seq(1986,2021,by=1)
 
 for(yr in yrs){
   print(yr)
   print(Sys.time())
   
-  pat <- paste0("mapbiomas_brazil-collection_30-annual_burned_coverage-mata_atlntica-",yr,"-0",".*\\.tif$")
-  outfname <- paste0("mapbiomas_brazil-collection_30-annual_burned_coverage-mata_atlntica-",yr,"-mosaicLastINT.tif")
+  pat <- paste0("mapbiomas-brazil-collection-80-mataatlntica-",yr,"-regen-0",".*\\.tif$")
+  outfname <- paste0("mapbiomas-brazil-collection-80-mataatlntica-",yr,"-regen-croppedINT.tif")
 
   print("mosaicFlist")
-  m <- mosaicFlist(data_path, pat, mfun='last', rdtype="INT1U")
+  m <- mosaicFlist(data_path, pat, mfun='first', rdtype="INT1U")
 
   print("resampleCrop")
   mr <- resampleCrop(m, cropper, resfun='near', cmask=T, rdtype="INT1U")
   
   print("writeRaster")
-  writeRaster(m, paste0(data_path,outfname), datatype="INT1U")
+  writeRaster(m, paste0(data_path,outfname), datatype="INT1U", overwrite=TRUE)
   
   print("complete")
   print(Sys.time())
